@@ -8,6 +8,7 @@ import environmentsValidation from 'src/config/environments.validation';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostsModule } from './posts/posts.module';
 import { UsersModule } from './users/users.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UsersModule } from './users/users.module';
     }),
     PostsModule,
     UsersModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
