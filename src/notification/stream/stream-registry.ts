@@ -1,57 +1,47 @@
 import { Injectable } from "@nestjs/common";
 
-type NotificationEvent = {
-    id: string;
+type DomainEvent = {
+    id: number | string;
     userId: number;
     type: string;
-    payload: any;
-}
+    payload: unknown;
+};
 
 @Injectable()
 export class StreamRegistry {
+    private listeners = new Map<number, (event: DomainEvent) => void>();
 
-    private listeners = new Map<number, (event: NotificationEvent) => void>();
-
-    createStream(userId: number): AsyncIterableIterator<any> {
-
-        const queue: NotificationEvent[] = [];
-        let resolve: ((value: IteratorResult<any>) => void) | null = null;
-
-        const format = (e: NotificationEvent) => ({
-            id: e.id,
-            type: e.type,
-            data: JSON.stringify(e.payload)
-        });
+    createStream(userId: number): AsyncIterableIterator<DomainEvent> {
+        const queue: DomainEvent[] = [];
+        let wake: (() => void) | null = null;
 
         this.listeners.set(userId, (event) => {
+            queue.push(event);
 
-            if(resolve) {
-                resolve({ value: format(event), done: false });
-                resolve = null;
-            } else {
-                queue.push(event);
+            if (wake) {
+                wake();
+                wake = null;
             }
-
         });
 
         async function* stream() {
-
-            while(true) {
-                if(queue.length) {
-                    yield format(queue.shift()!);
-                } else {
-                    const next = await new Promise<IteratorResult<any>>(r => (resolve = r));
-                    yield next;
+            try {
+                while (true) {
+                    if (queue.length) {
+                        yield queue.shift()!;
+                        continue;
+                    }
+                    await new Promise<void>(r => (wake = r));
                 }
+            } finally {
+                this.listeners.delete(userId);
             }
-
         }
 
         return stream();
-
     }
 
-    push(userId: number, event: NotificationEvent) {
+    push(userId: number, event: DomainEvent) {
         this.listeners.get(userId)?.(event);
     }
 

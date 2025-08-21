@@ -1,1 +1,7 @@
-POST http://localhost:5000/posts
+POST http://localhost:5000/posts/1
+Content-Type: application/json
+
+{
+    "title": "Database Design Principles 19",
+    "content": "Understanding relational database design, normalization, and performance optimization strategies."
+}
