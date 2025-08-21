@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NotificationService } from 'src/notification/providers/notification.service';
+import { NotificationType } from 'src/notification/types/notification-type.enum';
 import { CreatePostDto } from 'src/posts/dtos/create-post.dto';
 import { Post } from 'src/posts/posts.entity';
 import { UsersService } from 'src/users/providers/users.service';
@@ -13,7 +15,8 @@ export class PostsService {
     constructor(
         @InjectRepository(Post)
         private readonly postRepository: Repository<Post>,
-        private readonly usersService: UsersService
+        private readonly usersService: UsersService,
+        private readonly notificationService: NotificationService
     ) {}
 
 
@@ -31,6 +34,15 @@ export class PostsService {
 
             const savedPost = await this.postRepository.save(post);
             this.logger.log(`Post created successfully with ID: ${savedPost.id}`);
+
+            await this.notificationService.send(
+                userId,
+                NotificationType.PostCreated,
+                {
+                    title: savedPost.title,
+                    content: savedPost.content
+                }
+            );
 
             return savedPost;
 
